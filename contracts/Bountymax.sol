@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Andrew Jones
+// Copyright (c) 2016 Andrew Jones & Max Wolter
 //
 // This file is part of BOUNTYMAX.
 //
@@ -16,8 +16,22 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import "OraclizeI.sol";
+import "Entitlement.sol";
+import "EntitlementRegistry.sol";
 
+// 0xd0e9a443bae3d77863b385118a51c42deed84a87
 contract Bountymax is usingOraclize {
+
+  EntitlementRegistry entitlementRegistry = EntitlementRegistry(0xe5483c010d0f50ac93a341ef5428244c84043b54);
+
+  function getEntitlement() constant returns(address) {
+      return entitlementRegistry.getOrThrow("com.bountymax.poc");
+  }
+
+  modifier entitledUsersOnly {
+    if (!Entitlement(getEntitlement()).isEntitled(msg.sender)) throw;
+    _
+  }
 
   struct Bounty {
     string name;
@@ -36,20 +50,20 @@ contract Bountymax is usingOraclize {
     address hunter;
   }
 
-  string host;
-  address owner;
-  uint8 feePercentage;
-  uint feesCollected;
+  string public host;
+  address public owner;
+  uint8 public feePercentage;
+  uint public feesCollected;
 
-  uint numBounties;
+  uint public numBounties;
   mapping (uint => bytes32) public bountyIndex;
   mapping (bytes32 => Bounty) public bounties;
   mapping (bytes32 => Request) public requests;
 
-  function Bountymax(string oraclizeHost, uint8 initialFee) {
+  function Bountymax() {
     owner = msg.sender;
-    host = oraclizeHost;
-    feePercentage = initialFee;
+    host = "http://127.0.0.1";
+    feePercentage = 5;
   }
 
   function setFeePercentage(uint8 newFee) public {
@@ -66,7 +80,7 @@ contract Bountymax is usingOraclize {
   }
 
   /// called by dApp owner to register a contract with a bounty for hacking
-  function register(string name, address target, address invariant) public {
+  function register(string name, address target, address invariant) public entitledUsersOnly {
 
     // generate unique ID for target & invariant, so we can have multiple
     // bounties per target
@@ -83,7 +97,7 @@ contract Bountymax is usingOraclize {
   }
 
   // called to unregister / cancel a bounty
-  function unregister(address target, address invariant) public {
+  function unregister(address target, address invariant) public entitledUsersOnly {
 
     // generate unique ID for target & invariant, so we can have multiple
     // bounties per target
@@ -99,7 +113,7 @@ contract Bountymax is usingOraclize {
   }
 
   /// called by a bounty 'hunter' with an exploit to test against the contract
-  function exploit(address target, address invariant, address exploit) public {
+  function exploit(address target, address invariant, address exploit) public entitledUsersOnly {
 
     // generate unique ID for target & invariant to check if bounty exists
     bytes32 bountyID = sha3(strConcat(toString(target), toString(invariant)));
@@ -160,7 +174,7 @@ contract Bountymax is usingOraclize {
   }
 
   // withdraw allows a hunter to get his reward after a successful exploit
-  function withdraw(address target, address invariant) public {
+  function withdraw(address target, address invariant) public entitledUsersOnly {
 
     // generate unique ID for target & invariant to check if bounty exists
     bytes32 bountyID = sha3(strConcat(toString(target), toString(invariant)));

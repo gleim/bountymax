@@ -3,14 +3,11 @@ import EventEmitter from 'events';
 const emitter = new EventEmitter();
 
 export default class Connector{
-  constructor(web3, contract) {
+  constructor(web3, contract, walletBar) {
     this.web3 = web3;
     this.contract = contract;
+    this.walletBar = walletBar;
     this.emitter = emitter;
-    this.getAccount().then((account) =>{
-      this.account = account;
-      emitter.emit('ready', this)
-    })
   }
 
   on(listeners) {
@@ -18,18 +15,6 @@ export default class Connector{
       console.log("eventName", eventName)
       emitter.on(eventName, listeners[eventName]);
     }
-  }
-
-  getAccount(){
-    return new Promise((resolve,reject) =>{
-      this.web3.eth.getAccounts((err, accs) => {
-        if (err != null) { reject("There was an error fetching your accounts.") }
-        if (accs.length == 0) { reject("Couldn't get any accounts!") }
-        let accounts = accs;
-        let account = accounts[0];
-        resolve(account)
-      })
-    })
   }
 
   getBounties(callback){
@@ -58,18 +43,27 @@ export default class Connector{
     })
   }
 
-  register({name, targetAddress, bountyAddress, reward}){
-    this.contract.register.sendTransaction(
-      name,
-      targetAddress,
-      bountyAddress,
-      {from:this.account, value:reward}
-    )
+  register({name, target, invariant}){
+    var account = this.walletBar.getCurrentAccount();
+    this.walletBar.createSecureSigner();
+    this.contract.register.estimateGas(name, target, invariant, { from: account }, function (err1, gas) {
+      if(err1) return alert("Error: "+err1);
+        this.contract.register.sendTransaction(name, target, invariant, { gas: gas, from: account }, function (err2, hash) {
+          if(err2) return alert("Error: "+err2);
+            alert('Tx hash: '+hash);
+          });
+    });
   }
 
-  exploit(targetAddress, exploitAddress){
-    this.contract.exploit.sendTransaction(
-      targetAddress, exploitAddress,{from:this.account}
-    )
+  exploit(target, invariant, exploit){
+    var account = this.walletBar.getCurrentAccount();
+    this.walletBar.createSecureSigner();
+    this.contract.exploit.estimateGas(target, invariant, exploit, { from: account }, function (err1, gas) {
+      if(err1) return alert("Error: "+err1);
+        this.contract.exploit.sendTransaction(target, invariant, exploit, { gas: gas, from: account }, function (err2, hash) {
+          if(err2) return alert("Error: "+err2);
+            alert('Tx hash: '+hash);
+          });
+    });
   }
 }

@@ -8,33 +8,35 @@ import Connector from './connector';
 
 function setup(){
   return new Promise(function(resolve,reject){
-    let provider;
-    let url = "http://localhost:8545";
-    // mist loading proposal https://gist.github.com/frozeman/fbc7465d0b0e6c1c4c23
-    if(typeof web3 !== 'undefined'){
-      provider = web3.currentProvider;
-      web3 = new Web3;
-      resolve({web3, provider})
-    }else{
-      // connect to localhost
-      provider = new Web3.providers.HttpProvider(url);
-      let web3 = new Web3;
-      resolve({web3, provider})
-    }
-  });
+
+    // PUT YOUR UNIQUE ID HERE
+    //  (from the devadmin page, the one with '-edgware' appended)
+    var dappId = 'com-bountymax-poc-edgware';
+
+    // PUT YOUR CALLBACK URL HERE
+    var callbackUrl = 'http://127.0.0.1/';
+    // the callback must EXACTLY match the string configured in the devadmin web UI.
+    // e.g. be careful of trailing slashes
+
+    // PUT YOUR CONTRACT ADDRESS HERE
+    var contractAddress = '0xad459d49e9fc14dd972759c5e9ee60ee4976a9dd';
+
+    var walletBar = new WalletBar({
+       dappNamespace: dappId,
+       authServiceCallbackUrl: callbackUrl
+    })
+
+    var web3 = new Web3();
+    web3.setProvider(walletBar.getHook('edgware'));
+    resolve({web3, walletBar});
+  })
 }
 
 window.onload = function() {
-  setup().then(({provider, web3}) => {
-    web3.setProvider(provider);
-    Bountymax.setProvider(provider);
+  setup().then(({web3, walletBar}) => {
+    Bountymax.setProvider(web3.currentProvider);
     let contract = Bountymax.deployed();
-    let connector = new Connector(web3, contract);
-    connector.on({
-      'ready': (c) => {
-        console.log('ready to send transactions')
-      }
-    })
+    let connector = new Connector(web3, contract, walletBar);
     contract.allEvents({}, function(error, data) {
       console.log('allEvents',data.event, data.args)
       let message;

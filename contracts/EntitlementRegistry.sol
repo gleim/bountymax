@@ -15,24 +15,4 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-contract Migrations {
-  address public owner;
-  uint public last_completed_migration;
-
-  modifier restricted() {
-    if (msg.sender == owner) _
-  }
-
-  function Migrations() {
-    owner = msg.sender;
-  }
-
-  function setCompleted(uint completed) restricted {
-    last_completed_migration = completed;
-  }
-
-  function upgrade(address new_address) restricted {
-    Migrations upgraded = Migrations(new_address);
-    upgraded.setCompleted(last_completed_migration);
-  }
-}
+contract EntitlementRegistry{function get(string _name)constant returns(address );function getOrThrow(string _name)constant returns(address );}
