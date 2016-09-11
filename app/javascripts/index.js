@@ -1,8 +1,10 @@
 import {} from "../stylesheets/app.css";
+import 'react-notifications/lib/notifications.css';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import injectTapEventPlugin from 'react-tap-event-plugin';
 import App from './components/app';
+import Connector from './connector';
 
 function setup(){
   return new Promise(function(resolve,reject){
@@ -25,10 +27,36 @@ function setup(){
 window.onload = function() {
   setup().then(({provider, web3}) => {
     web3.setProvider(provider);
+    Bountymax.setProvider(provider);
     let contract = Bountymax.deployed();
+    let connector = new Connector(web3, contract);
+    connector.on({
+      'ready': (c) => {
+        console.log('ready to send transactions')
+      }
+    })
+    contract.allEvents({}, function(error, data) {
+      console.log('allEvents',data.event, data.args)
+      let message;
+      switch (data.event) {
+        case 'BountyClaimed':
+          // message = `Congratulation! you won ${data.args.amount.toNumber()}`
+          message = `Congratulation! you successfully exploited`;
+          connector.emitter.emit('notification', {status:'success', message: message});
+          break;
+        case 'ExploitFailed':
+          message = `Your exploitation did not work. Try again`
+          connector.emitter.emit('notification', {status:'error', message: message});
+          break;
+        default:
+          connector.emitter.emit('notification', {status:'info', message: data.event});
+      }
+    });
+
+    window.connector = connector;
     injectTapEventPlugin();
     ReactDOM.render(
-      <App contract={contract}/>,
+      <App connector={connector}/>,
       document.getElementById('app')
     );
   })
