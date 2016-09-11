@@ -19,7 +19,7 @@ class Register extends React.Component {
     this.state = {
       name: '',
       targetAddress: '',
-      bountyAddress: '',
+      invariantAddress: '',
       deposit: '0'
     };
   }

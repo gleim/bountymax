@@ -9,7 +9,7 @@ import Connector from './connector';
 function setup(){
   return new Promise(function(resolve,reject){
     let provider;
-    let url = "http://localhost:8545";
+    let url = "http://127.0.0.1:8545";
     // mist loading proposal https://gist.github.com/frozeman/fbc7465d0b0e6c1c4c23
     if(typeof web3 !== 'undefined'){
       provider = web3.currentProvider;
